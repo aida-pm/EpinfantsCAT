@@ -31,7 +31,8 @@ PALETTE = {
 def set_style():
     plt.rcParams.update({
         "font.size": 14,
-        "font.family": "Arial",
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
         "axes.grid": False,
         "figure.dpi": 150,
     })
@@ -50,6 +51,26 @@ def _save(fig, filename, images_dir):
     fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     return path
+
+
+def plot_series(series, title, ylabel="", color=PALETTE["blue"], description="",
+                 images_dir="assets/images/plots", slug=None):
+    """Plot a pre-computed pandas Series indexed by date — e.g. the output
+    of population.compute_national_incidence(). Use this when the
+    aggregation/math already happened elsewhere and you just need the plot."""
+    set_style()
+    slug = slug or slugify(title)
+    filename = f"{slug}.png"
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.plot(series.index, series.values, color=color, linewidth=2)
+    ax.set_ylabel(ylabel, fontsize=14)
+    ax.grid(axis="y", linestyle="--", alpha=0.6)
+    ax.set_title(title, fontsize=16, fontweight="bold")
+    fig.tight_layout()
+
+    _save(fig, filename, images_dir)
+    return {"title": title, "filename": filename, "slug": slug, "description": description}
 
 
 def plot_timeseries(df, date_col, value_col, title, ylabel=None,

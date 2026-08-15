@@ -32,4 +32,9 @@ exclude:
 - "*.gemspec"
 - LICENSE.md
 - CONTRIBUTING.md
-- README.md 
+- README.md
+- scripts
+- requirements.txt
+- data
+- "__pycache__"
+- venv

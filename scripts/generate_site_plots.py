@@ -2,121 +2,109 @@
 """
 generate_site_plots.py
 
-Loads the local CSVs (via load_data.py's loader), generates figures using
-the reusable functions in plots.py, and writes them straight into the
-Jekyll site as:
+Loads both datasets, computes national incidence rates (per 100,000
+inhabitants, using the Catalonia 2026 population reference in
+population.py), and generates ONE plot per virus (microbiologica) and ONE
+plot per syndromic diagnosis (sindromica) — automatically, based on
+whatever distinct values show up in the data, no manual list to maintain.
 
-  - PNG images   -> assets/images/plots/<slug>.png
-  - Jekyll pages -> _plots/<slug>.md   (one page per figure, with front matter)
+Each figure is written as:
+  - PNG image   -> assets/images/plots/<slug>.png
+  - Jekyll page -> _plots/<slug>.md
 
-Jekyll then renders each figure as its own page (via the `plot` layout),
-and the homepage gallery lists them all as clickable thumbnails.
-
-Run this any time you refresh your local data and want the site's figures
-updated:
+Run any time you refresh your local data:
 
     python scripts/generate_site_plots.py
 
-Then commit + push the changed files in assets/images/plots/ and _plots/
-(and any local data/ changes if you're tracking those) via GitHub Desktop.
+Then commit + push assets/images/plots/ and _plots/ via GitHub Desktop.
 """
 
 import os
 import sys
 from datetime import datetime
 
-# Make sure we can import the sibling modules regardless of the working
-# directory this script is run from.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from load_data import load_dataset, FILENAMES  # noqa: E402
 import plots  # noqa: E402
+import population  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMAGES_DIR = os.path.join(REPO_ROOT, "assets", "images", "plots")
 PLOTS_COLLECTION_DIR = os.path.join(REPO_ROOT, "_plots")
 
-# --------------------------------------------------------------------------
-# AUTO MODE: with no knowledge of exact column names, this detects a date
-# column and the numeric columns in each dataset and makes a generic
-# timeseries + a bar chart of the top categorical values.
-#
-# Once you know the real column names (run scripts/load_data.py once and
-# check the printed df.dtypes), switch AUTO_MODE to False and fill in
-# CUSTOM_PLOTS below for full control — titles, labels, colors, dual-axis
-# comparisons, multi-series comparisons, etc.
-# --------------------------------------------------------------------------
-AUTO_MODE = True
+COLORS = list(plots.PALETTE.values())
 
 
-def detect_date_column(df):
-    for col in df.columns:
-        lower = col.lower()
-        if "data" in lower or "date" in lower:
-            import pandas as pd
-            parsed = pd.to_datetime(df[col], errors="coerce")
-            if parsed.notna().sum() > 0:
-                df[col] = parsed
-                return col
-    return None
-
-
-def auto_generate_plots(df, dataset_name):
+def generate_virus_plots(df):
+    """One national incidence plot per distinct value of 'virus', from the
+    microbiologica dataset. Denominator: total Catalan population (both
+    sexes, all ages) — a crude national incidence, not age-adjusted."""
     results = []
-    date_col = detect_date_column(df)
-    numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    cat_cols = df.select_dtypes(include="object").columns.tolist()
+    viruses = sorted(v for v in df["virus"].dropna().unique().tolist())
 
-    if date_col and numeric_cols:
-        for num_col in numeric_cols[:3]:
-            title = f"{dataset_name.capitalize()}: {num_col} over time"
-            meta = plots.plot_timeseries(
-                df, date_col, num_col, title=title, ylabel=num_col,
-                description=f"Daily/weekly trend of '{num_col}' from the {dataset_name} dataset.",
-                images_dir=IMAGES_DIR,
-            )
-            results.append(meta)
+    for i, virus in enumerate(viruses):
+        subset = df[df["virus"] == virus]
+        incidence = population.compute_national_incidence(
+            subset, date_col="data_inici", count_col="positiu"
+        )
+        if incidence.empty:
+            continue
 
-    if cat_cols:
-        cat_col = cat_cols[0]
-        title = f"{dataset_name.capitalize()}: top values of {cat_col}"
-        meta = plots.plot_top_categories(
-            df, cat_col, title=title,
-            description=f"Most frequent values of '{cat_col}' in the {dataset_name} dataset.",
+        title = f"{virus} — vigilància microbiològica"
+        meta = plots.plot_series(
+            incidence,
+            title=title,
+            ylabel="Casos positius per 100.000 hab.",
+            color=COLORS[i % len(COLORS)],
+            description=(
+                f"Evolució setmanal de casos positius de {virus} a Catalunya, "
+                f"per 100.000 habitants (font: vigilància microbiològica "
+                f"sentinella a Atenció Primària; població de referència: "
+                f"cens de Catalunya, gener 2026)."
+            ),
             images_dir=IMAGES_DIR,
+            slug=f"virus-{plots.slugify(virus)}",
         )
         results.append(meta)
+        print(f"  [{virus}] {len(subset)} rows -> {meta['filename']}")
 
     return results
 
 
-# --------------------------------------------------------------------------
-# CUSTOM_PLOTS: once you know your real column names, write specific plot
-# calls here instead of relying on auto-detection. Example (edit/uncomment
-# once you know actual column names from df.dtypes):
-#
-# def custom_generate_plots(dataframes):
-#     results = []
-#     df = dataframes["sindromica"]
-#     results.append(plots.plot_dual_axis_timeseries(
-#         df, date_col="data",
-#         col1="Bronquiolitis (<5 a.)", label1="Bronchiolitis",
-#         col2="COVID-19 (tothom)", label2="COVID-19",
-#         title="Bronchiolitis vs COVID-19",
-#         description="Weekly incidence comparison between bronchiolitis and COVID-19.",
-#         images_dir=IMAGES_DIR,
-#     ))
-#     results.append(plots.plot_multi_series(
-#         df, date_col="data",
-#         value_cols=["Grip (0 a.)", "Grip (1-2 a.)", "Grip (3-4 a.)"],
-#         labels=["0 years", "1-2 years", "3-4 years"],
-#         title="Influenza incidence by age group",
-#         ylabel="Cases per 100,000 inh.",
-#         description="Comparing influenza incidence across pediatric age groups.",
-#         images_dir=IMAGES_DIR,
-#     ))
-#     return results
-# --------------------------------------------------------------------------
+def generate_diagnostic_plots(df):
+    """One national incidence plot per distinct value of 'diagnostic', from
+    the sindromica dataset. Same national-crude-rate approach as above."""
+    results = []
+    diagnostics = sorted(d for d in df["diagnostic"].dropna().unique().tolist())
+
+    for i, diagnostic in enumerate(diagnostics):
+        subset = df[df["diagnostic"] == diagnostic]
+        incidence = population.compute_national_incidence(
+            subset, date_col="data", count_col="casos"
+        )
+        if incidence.empty:
+            continue
+
+        title = f"{diagnostic} — vigilància sindròmica"
+        meta = plots.plot_series(
+            incidence,
+            title=title,
+            ylabel="Casos per 100.000 hab.",
+            color=COLORS[i % len(COLORS)],
+            description=(
+                f"Evolució setmanal de casos de {diagnostic} a Catalunya, "
+                f"per 100.000 habitants (font: vigilància sindròmica "
+                f"d'infeccions a Atenció Primària; població de referència: "
+                f"cens de Catalunya, gener 2026)."
+            ),
+            images_dir=IMAGES_DIR,
+            slug=f"diagnostic-{plots.slugify(diagnostic)}",
+        )
+        results.append(meta)
+        print(f"  [{diagnostic}] {len(subset)} rows -> {meta['filename']}")
+
+    return results
 
 
 def write_jekyll_page(meta):
@@ -124,15 +112,20 @@ def write_jekyll_page(meta):
     path = os.path.join(PLOTS_COLLECTION_DIR, f"{meta['slug']}.md")
     today = datetime.now().strftime("%Y-%m-%d")
 
+    # Escape any stray double-quotes in title/description so the YAML
+    # front matter doesn't break.
+    safe_title = meta["title"].replace('"', "'")
+    safe_desc = meta["description"].replace('"', "'")
+
     front_matter = (
         "---\n"
         "layout: plot\n"
-        f"title: \"{meta['title']}\"\n"
+        f"title: \"{safe_title}\"\n"
         f"image: /assets/images/plots/{meta['filename']}\n"
         f"date: {today}\n"
-        f"description: \"{meta['description']}\"\n"
+        f"description: \"{safe_desc}\"\n"
         "---\n\n"
-        f"{meta['description']}\n"
+        f"{safe_desc}\n"
     )
 
     with open(path, "w", encoding="utf-8") as f:
@@ -155,15 +148,13 @@ def main():
 
     all_plot_meta = []
 
-    if AUTO_MODE:
-        for name, df in dataframes.items():
-            print(f"\n[{name}] generating auto plots...")
-            all_plot_meta.extend(auto_generate_plots(df, name))
-    else:
-        # Uncomment custom_generate_plots above and use it here instead.
-        raise NotImplementedError(
-            "Set AUTO_MODE = True, or implement + call custom_generate_plots(dataframes)."
-        )
+    if "microbiologica" in dataframes:
+        print("\nGenerating one plot per virus (microbiologica)...")
+        all_plot_meta.extend(generate_virus_plots(dataframes["microbiologica"]))
+
+    if "sindromica" in dataframes:
+        print("\nGenerating one plot per diagnosis (sindromica)...")
+        all_plot_meta.extend(generate_diagnostic_plots(dataframes["sindromica"]))
 
     print(f"\nGenerated {len(all_plot_meta)} figures. Writing Jekyll pages...")
     for meta in all_plot_meta:
@@ -172,7 +163,7 @@ def main():
     print("\nDone. Now:")
     print("  1. git add assets/images/plots _plots")
     print("  2. commit + push via GitHub Desktop")
-    print("  3. make sure _config.yml declares the 'plots' collection (see instructions)")
+    print("  3. make sure _config.yml declares the 'plots' collection")
 
 
 if __name__ == "__main__":
