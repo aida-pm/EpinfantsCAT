@@ -1,23 +1,21 @@
 # site settings
-title: Forty
-subtitle: by HTML5 UP
+title: EpinfantsCAT
 email: aida.perramon.m@gmail.com
-description: A responsive site template designed by HTML5 Up<br /> and released under the Creative Commons.
-baseurl: "/EpinfantsCAT" # the subpath of your site, e.g. /blog
-url: # the base hostname & protocol for your site
+description: Pàgina web per veure com avancen les epidèmies de virus respiratoris a la població infantil de Catalunya.
+baseurl: "/EpinfantsCAT" 
 author: A. Perramon Malavez
 city: Barcelona
 
 # homepage tiles
 tiles-source: pages # accepts "posts" or "pages"
-tiles-count: 6
+tiles-count: 4
 
 collections:
   plots:
     output: true
     permalink: /plots/:slug/
 
-# social settings (key must match name of font awesome icon)
+# social settings 
 socials:
   GitHub: https://github.com/aida-pm
   LinkedIn: https://www.linkedin.com/in/aidaperramon/
