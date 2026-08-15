@@ -2,21 +2,25 @@
 """
 generate_site_plots.py
 
-Loads both datasets, computes national incidence rates (per 100,000
-inhabitants, using the Catalonia 2026 population reference in
-population.py), and generates ONE plot per virus (microbiologica) and ONE
-plot per syndromic diagnosis (sindromica) — automatically, based on
-whatever distinct values show up in the data, no manual list to maintain.
+Loads both datasets (sindromica + microbiologica), computes national
+incidence rates (per 100,000 inhabitants, using the Catalonia 2026
+population reference in population.py), and generates:
 
-Each figure is written as:
-  - PNG image   -> assets/images/plots/<slug>.png
-  - Jekyll page -> _plots/<slug>.md
+  1. One static PNG + Jekyll page per virus (microbiologica) and per
+     syndromic diagnosis (sindromica) — tagged with a `category` front
+     matter field (grip / vrs / altres) so they can be grouped on the
+     Grip / VRS / Altres pages.
+
+  2. Two interactive combined charts (all diagnoses in one, all viruses
+     in one, toggleable via legend) written to assets/interactive/, meant
+     to be embedded on the homepage.
 
 Run any time you refresh your local data:
 
     python scripts/generate_site_plots.py
 
-Then commit + push assets/images/plots/ and _plots/ via GitHub Desktop.
+Then commit + push assets/, _plots/ via GitHub Desktop (data/ stays local,
+per .gitignore).
 """
 
 import os
@@ -28,18 +32,27 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from load_data import load_dataset, FILENAMES  # noqa: E402
 import plots  # noqa: E402
 import population  # noqa: E402
+import interactive  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMAGES_DIR = os.path.join(REPO_ROOT, "assets", "images", "plots")
+INTERACTIVE_DIR = os.path.join(REPO_ROOT, "assets", "interactive")
 PLOTS_COLLECTION_DIR = os.path.join(REPO_ROOT, "_plots")
 
 COLORS = list(plots.PALETTE.values())
 
 
+def categorize(name: str) -> str:
+    """Groups a virus/diagnostic name into one of three site categories."""
+    n = name.lower()
+    if "grip" in n:
+        return "grip"
+    if n == "vrs" or "vrs" in n:
+        return "vrs"
+    return "altres"
+
+
 def generate_virus_plots(df):
-    """One national incidence plot per distinct value of 'virus', from the
-    microbiologica dataset. Denominator: total Catalan population (both
-    sexes, all ages) — a crude national incidence, not age-adjusted."""
     results = []
     viruses = sorted(v for v in df["virus"].dropna().unique().tolist())
 
@@ -66,15 +79,15 @@ def generate_virus_plots(df):
             images_dir=IMAGES_DIR,
             slug=f"virus-{plots.slugify(virus)}",
         )
+        meta["category"] = categorize(virus)
+        meta["source"] = "microbiologica"
         results.append(meta)
-        print(f"  [{virus}] {len(subset)} rows -> {meta['filename']}")
+        print(f"  [{virus}] {len(subset)} rows -> {meta['filename']} (category: {meta['category']})")
 
     return results
 
 
 def generate_diagnostic_plots(df):
-    """One national incidence plot per distinct value of 'diagnostic', from
-    the sindromica dataset. Same national-crude-rate approach as above."""
     results = []
     diagnostics = sorted(d for d in df["diagnostic"].dropna().unique().tolist())
 
@@ -101,10 +114,46 @@ def generate_diagnostic_plots(df):
             images_dir=IMAGES_DIR,
             slug=f"diagnostic-{plots.slugify(diagnostic)}",
         )
+        meta["category"] = categorize(diagnostic)
+        meta["source"] = "sindromica"
         results.append(meta)
-        print(f"  [{diagnostic}] {len(subset)} rows -> {meta['filename']}")
+        print(f"  [{diagnostic}] {len(subset)} rows -> {meta['filename']} (category: {meta['category']})")
 
     return results
+
+
+def generate_interactive_overview(dataframes):
+    if "microbiologica" in dataframes:
+        df = dataframes["microbiologica"]
+        series_dict = {}
+        for virus in sorted(df["virus"].dropna().unique()):
+            s = population.compute_national_incidence(
+                df[df["virus"] == virus], date_col="data_inici", count_col="positiu"
+            )
+            if not s.empty:
+                series_dict[virus] = s
+        interactive.build_interactive_lines(
+            series_dict,
+            title="Tots els virus — vigilància microbiològica",
+            ylabel="Casos positius per 100.000 hab.",
+            output_path=os.path.join(INTERACTIVE_DIR, "tots-microbiologics.html"),
+        )
+
+    if "sindromica" in dataframes:
+        df = dataframes["sindromica"]
+        series_dict = {}
+        for diagnostic in sorted(df["diagnostic"].dropna().unique()):
+            s = population.compute_national_incidence(
+                df[df["diagnostic"] == diagnostic], date_col="data", count_col="casos"
+            )
+            if not s.empty:
+                series_dict[diagnostic] = s
+        interactive.build_interactive_lines(
+            series_dict,
+            title="Totes les síndromes — vigilància sindròmica",
+            ylabel="Casos per 100.000 hab.",
+            output_path=os.path.join(INTERACTIVE_DIR, "tots-sindromes.html"),
+        )
 
 
 def write_jekyll_page(meta):
@@ -112,8 +161,6 @@ def write_jekyll_page(meta):
     path = os.path.join(PLOTS_COLLECTION_DIR, f"{meta['slug']}.md")
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # Escape any stray double-quotes in title/description so the YAML
-    # front matter doesn't break.
     safe_title = meta["title"].replace('"', "'")
     safe_desc = meta["description"].replace('"', "'")
 
@@ -123,6 +170,8 @@ def write_jekyll_page(meta):
         f"title: \"{safe_title}\"\n"
         f"image: /assets/images/plots/{meta['filename']}\n"
         f"date: {today}\n"
+        f"category: {meta.get('category', 'altres')}\n"
+        f"source: {meta.get('source', '')}\n"
         f"description: \"{safe_desc}\"\n"
         "---\n\n"
         f"{safe_desc}\n"
@@ -156,14 +205,16 @@ def main():
         print("\nGenerating one plot per diagnosis (sindromica)...")
         all_plot_meta.extend(generate_diagnostic_plots(dataframes["sindromica"]))
 
-    print(f"\nGenerated {len(all_plot_meta)} figures. Writing Jekyll pages...")
+    print(f"\nGenerated {len(all_plot_meta)} static figures. Writing Jekyll pages...")
     for meta in all_plot_meta:
         write_jekyll_page(meta)
 
+    print("\nGenerating combined interactive charts...")
+    generate_interactive_overview(dataframes)
+
     print("\nDone. Now:")
-    print("  1. git add assets/images/plots _plots")
+    print("  1. git add assets/ _plots/")
     print("  2. commit + push via GitHub Desktop")
-    print("  3. make sure _config.yml declares the 'plots' collection")
 
 
 if __name__ == "__main__":
