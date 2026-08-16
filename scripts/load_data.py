@@ -22,6 +22,8 @@ Setup:
 
 import os
 import sys
+import glob
+import re
 from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -91,17 +93,47 @@ DTYPE_SPECS = {
 }
 
 
+def find_latest_matching_file(name: str, filename: str) -> str:
+    """If the exact dated filename doesn't exist, look in DATA_DIR for
+    other files matching '{name}_YYYYMMDD.csv' and return the path of the
+    most recent one by date. Returns None if nothing matches at all."""
+    prefix = filename.rsplit("_", 1)[0]  # e.g. "sindromica" from "sindromica_20260816.csv"
+    pattern = os.path.join(DATA_DIR, f"{prefix}_*.csv")
+    candidates = glob.glob(pattern)
+
+    dated = []
+    for path in candidates:
+        m = re.search(r"_(\d{8})\.csv$", os.path.basename(path))
+        if m:
+            try:
+                date = datetime.strptime(m.group(1), "%Y%m%d")
+                dated.append((date, path))
+            except ValueError:
+                continue
+
+    if not dated:
+        return None
+
+    dated.sort(key=lambda t: t[0])
+    latest_date, latest_path = dated[-1]
+    print(f"[{name}] No file dated today — using most recent available: "
+          f"{os.path.basename(latest_path)} ({latest_date.strftime('%d/%m/%Y')})")
+    return latest_path
+
+
 def load_dataset(name: str, filename: str) -> pd.DataFrame:
     path = os.path.join(DATA_DIR, filename)
-    if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"[{name}] Couldn't find '{path}'. "
-            f"Check the file is in data/ and that FILENAMES['{name}'] "
-            f"matches the exact filename (including extension)."
-        )
 
-    # Read raw first (everything as string/object) so we control typing
-    # ourselves afterward, rather than letting pandas guess.
+    if not os.path.exists(path):
+        fallback_path = find_latest_matching_file(name, filename)
+        if fallback_path is None:
+            raise FileNotFoundError(
+                f"[{name}] Couldn't find '{path}', and no other "
+                f"'{name}_YYYYMMDD.csv' files were found in {DATA_DIR} either. "
+                f"Check the file is actually in data/."
+            )
+        path = fallback_path
+
     try:
         df = pd.read_csv(path, encoding="UTF-8", dtype=str)
     except UnicodeDecodeError:
@@ -112,7 +144,7 @@ def load_dataset(name: str, filename: str) -> pd.DataFrame:
 
     df = apply_dtypes(df, name)
 
-    print(f"[{name}] loaded {len(df)} rows, {len(df.columns)} columns from {filename}")
+    print(f"[{name}] loaded {len(df)} rows, {len(df.columns)} columns from {os.path.basename(path)}")
     return df
 
 

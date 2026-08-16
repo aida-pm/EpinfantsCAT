@@ -2,30 +2,37 @@
 """
 generate_site_plots.py
 
-Loads both datasets (sindromica + microbiologica), computes national
-incidence rates (per 100,000 inhabitants, using the Catalonia 2026
-population reference in population.py), and generates:
+Loads both datasets, computes national incidence (per 100,000 inhabitants)
+for every virus and every syndromic diagnosis, applies a 7-period moving
+average (matching the original notebooks' methodology), and builds:
 
-  1. One static PNG + Jekyll page per virus (microbiologica) and per
-     syndromic diagnosis (sindromica) — tagged with a `category` front
-     matter field (grip / vrs / altres) so they can be grouped on the
-     Grip / VRS / Altres pages.
+  1. THREE combined static PNGs — one per category (Grip / VRS / Altres),
+     each showing every relevant line (virus + diagnostic) together on a
+     single chart:
+         assets/images/plots/grip-combined.png
+         assets/images/plots/vrs-combined.png
+         assets/images/plots/altres-combined.png
+     These are what grip.md / vrs.md / altres.md display, and (via their
+     `image:` front matter) what shows up as the homepage tile thumbnail.
 
-  2. Two interactive combined charts (all diagnoses in one, all viruses
-     in one, toggleable via legend) written to assets/interactive/, meant
-     to be embedded on the homepage.
+  2. TWO combined interactive charts — all viruses in one, all diagnoses
+     in one, with a toggleable legend:
+         assets/interactive/tots-microbiologics.html
+         assets/interactive/tots-sindromes.html
+     These are embedded on the homepage (index.md) under "Massa libero".
+
+This REPLACES the old one-PNG-per-virus/per-diagnostic approach and the
+_plots collection — everything is now consolidated into these 5 outputs.
 
 Run any time you refresh your local data:
 
     python scripts/generate_site_plots.py
 
-Then commit + push assets/, _plots/ via GitHub Desktop (data/ stays local,
-per .gitignore).
+Then commit + push assets/ via GitHub Desktop (data/ stays local).
 """
 
 import os
 import sys
-from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,9 +44,8 @@ import interactive  # noqa: E402
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMAGES_DIR = os.path.join(REPO_ROOT, "assets", "images", "plots")
 INTERACTIVE_DIR = os.path.join(REPO_ROOT, "assets", "interactive")
-PLOTS_COLLECTION_DIR = os.path.join(REPO_ROOT, "_plots")
 
-COLORS = list(plots.PALETTE.values())
+SMOOTH_YLABEL_SUFFIX = " (mitjana mòbil 7 dies)"
 
 
 def categorize(name: str) -> str:
@@ -52,135 +58,105 @@ def categorize(name: str) -> str:
     return "altres"
 
 
-def generate_virus_plots(df):
-    results = []
-    viruses = sorted(v for v in df["virus"].dropna().unique().tolist())
+def build_series_for_dataset(df, date_col, count_col, group_col):
+    """Returns {name: 7-day-smoothed incidence Series} for every distinct
+    value in group_col (e.g. every virus, or every diagnostic). Groups
+    directly by the real date_col values (daily), no interpolation."""
+    result = {}
+    for value in sorted(df[group_col].dropna().unique().tolist()):
+        subset = df[df[group_col] == value]
+        s = population.compute_national_incidence(subset, date_col=date_col, count_col=count_col)
+        if not s.empty:
+            result[value] = population.rolling_average(s, window=7, center=True, min_periods=1)
+    return result
 
-    for i, virus in enumerate(viruses):
-        subset = df[df["virus"] == virus]
-        incidence = population.compute_national_incidence(
-            subset, date_col="data_inici", count_col="positiu"
-        )
-        if incidence.empty:
+
+def build_category_static_plots(virus_series, diagnostic_series):
+    """Builds ONE combined static PNG per category (grip/vrs/altres),
+    mixing both sources when relevant (e.g. Grip's virus-detection line
+    together with Grip's syndromic-diagnosis line)."""
+    combined = {"grip": {}, "vrs": {}, "altres": {}}
+
+    for name, s in virus_series.items():
+        combined[categorize(name)][f"{name} (microbiològica)"] = s
+    for name, s in diagnostic_series.items():
+        combined[categorize(name)][f"{name} (sindròmica)"] = s
+
+    titles = {
+        "grip": "Grip",
+        "vrs": "VRS",
+        "altres": "Altres virus i síndromes",
+    }
+    results = {}
+
+    for cat, series_dict in combined.items():
+        if not series_dict:
+            print(f"  [{cat}] no data available, skipping.")
             continue
 
-        title = f"{virus} — vigilància microbiològica"
-        meta = plots.plot_series(
-            incidence,
-            title=title,
-            ylabel="Casos positius per 100.000 hab.",
-            color=COLORS[i % len(COLORS)],
-            description=(
-                f"Evolució setmanal de casos positius de {virus} a Catalunya, "
-                f"per 100.000 habitants (font: vigilància microbiològica "
-                f"sentinella a Atenció Primària; població de referència: "
-                f"cens de Catalunya, gener 2026)."
-            ),
-            images_dir=IMAGES_DIR,
-            slug=f"virus-{plots.slugify(virus)}",
-        )
-        meta["category"] = categorize(virus)
-        meta["source"] = "microbiologica"
-        results.append(meta)
-        print(f"  [{virus}] {len(subset)} rows -> {meta['filename']} (category: {meta['category']})")
-
-    return results
-
-
-def generate_diagnostic_plots(df):
-    results = []
-    diagnostics = sorted(d for d in df["diagnostic"].dropna().unique().tolist())
-
-    for i, diagnostic in enumerate(diagnostics):
-        subset = df[df["diagnostic"] == diagnostic]
-        incidence = population.compute_national_incidence(
-            subset, date_col="data", count_col="casos"
-        )
-        if incidence.empty:
-            continue
-
-        title = f"{diagnostic} — vigilància sindròmica"
-        meta = plots.plot_series(
-            incidence,
-            title=title,
-            ylabel="Casos per 100.000 hab.",
-            color=COLORS[i % len(COLORS)],
-            description=(
-                f"Evolució setmanal de casos de {diagnostic} a Catalunya, "
-                f"per 100.000 habitants (font: vigilància sindròmica "
-                f"d'infeccions a Atenció Primària; població de referència: "
-                f"cens de Catalunya, gener 2026)."
-            ),
-            images_dir=IMAGES_DIR,
-            slug=f"diagnostic-{plots.slugify(diagnostic)}",
-        )
-        meta["category"] = categorize(diagnostic)
-        meta["source"] = "sindromica"
-        results.append(meta)
-        print(f"  [{diagnostic}] {len(subset)} rows -> {meta['filename']} (category: {meta['category']})")
-
-    return results
-
-
-def generate_interactive_overview(dataframes):
-    if "microbiologica" in dataframes:
-        df = dataframes["microbiologica"]
-        series_dict = {}
-        for virus in sorted(df["virus"].dropna().unique()):
-            s = population.compute_national_incidence(
-                df[df["virus"] == virus], date_col="data_inici", count_col="positiu"
-            )
-            if not s.empty:
-                series_dict[virus] = s
-        interactive.build_interactive_lines(
+        title = titles[cat]
+        meta = plots.plot_combined_series(
             series_dict,
+            title=title,
+            ylabel="Casos / positius per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
+            description=(
+                f"Evolució combinada (mitjana mòbil ~7 setmanes) de totes les "
+                f"figures de la categoria {title}, combinant vigilància "
+                f"sindròmica i microbiològica quan escau."
+            ),
+            images_dir=IMAGES_DIR,
+            slug=f"{cat}-combined",
+        )
+        results[cat] = meta
+        print(f"  [{cat}] {len(series_dict)} línies -> {meta['filename']}")
+
+    return results
+
+
+def build_seasonal_plots(virus_series, diagnostic_series):
+    """Season-over-season overlay charts (Sept-Aug), for the signals where
+    this comparison is most meaningful: Grip and VRS. Each season gets its
+    own colored line on a shared "day of season" x-axis, in addition to
+    (not replacing) the full-timeline combined charts built above."""
+    targets = []
+    if "Grip" in virus_series:
+        targets.append(("grip-virus-seasonal", "Grip — vigilància microbiològica, per temporada", virus_series["Grip"]))
+    if "Grip" in diagnostic_series:
+        targets.append(("grip-diagnostic-seasonal", "Grip — vigilància sindròmica, per temporada", diagnostic_series["Grip"]))
+    if "VRS" in virus_series:
+        targets.append(("vrs-virus-seasonal", "VRS — vigilància microbiològica, per temporada", virus_series["VRS"]))
+
+    results = {}
+    for slug, title, series in targets:
+        meta = plots.plot_seasonal_overlay(
+            series,
+            title=title,
+            ylabel="Incidència per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
+            description=f"Comparació de temporades (setembre-agost) per a {title}.",
+            images_dir=IMAGES_DIR,
+            slug=slug,
+        )
+        if meta:
+            results[slug] = meta
+            print(f"  [seasonal] {meta['filename']}")
+    return results
+
+
+def build_interactive_overview(virus_series, diagnostic_series):
+    if virus_series:
+        interactive.build_interactive_lines(
+            virus_series,
             title="Tots els virus — vigilància microbiològica",
-            ylabel="Casos positius per 100.000 hab.",
+            ylabel="Casos positius per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
             output_path=os.path.join(INTERACTIVE_DIR, "tots-microbiologics.html"),
         )
-
-    if "sindromica" in dataframes:
-        df = dataframes["sindromica"]
-        series_dict = {}
-        for diagnostic in sorted(df["diagnostic"].dropna().unique()):
-            s = population.compute_national_incidence(
-                df[df["diagnostic"] == diagnostic], date_col="data", count_col="casos"
-            )
-            if not s.empty:
-                series_dict[diagnostic] = s
+    if diagnostic_series:
         interactive.build_interactive_lines(
-            series_dict,
+            diagnostic_series,
             title="Totes les síndromes — vigilància sindròmica",
-            ylabel="Casos per 100.000 hab.",
+            ylabel="Casos per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
             output_path=os.path.join(INTERACTIVE_DIR, "tots-sindromes.html"),
         )
-
-
-def write_jekyll_page(meta):
-    os.makedirs(PLOTS_COLLECTION_DIR, exist_ok=True)
-    path = os.path.join(PLOTS_COLLECTION_DIR, f"{meta['slug']}.md")
-    today = datetime.now().strftime("%Y-%m-%d")
-
-    safe_title = meta["title"].replace('"', "'")
-    safe_desc = meta["description"].replace('"', "'")
-
-    front_matter = (
-        "---\n"
-        "layout: plot\n"
-        f"title: \"{safe_title}\"\n"
-        f"image: /assets/images/plots/{meta['filename']}\n"
-        f"date: {today}\n"
-        f"category: {meta.get('category', 'altres')}\n"
-        f"source: {meta.get('source', '')}\n"
-        f"description: \"{safe_desc}\"\n"
-        "---\n\n"
-        f"{safe_desc}\n"
-    )
-
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(front_matter)
-
-    print(f"  wrote page: {path}")
 
 
 def main():
@@ -195,25 +171,34 @@ def main():
         print("No datasets loaded — check data/ folder and FILENAMES in load_data.py.", file=sys.stderr)
         sys.exit(1)
 
-    all_plot_meta = []
+    virus_series = {}
+    diagnostic_series = {}
 
     if "microbiologica" in dataframes:
-        print("\nGenerating one plot per virus (microbiologica)...")
-        all_plot_meta.extend(generate_virus_plots(dataframes["microbiologica"]))
+        print("Computing smoothed incidence per virus (microbiologica)...")
+        virus_series = build_series_for_dataset(
+            dataframes["microbiologica"], date_col="data_inici",
+            count_col="positiu", group_col="virus",
+        )
 
     if "sindromica" in dataframes:
-        print("\nGenerating one plot per diagnosis (sindromica)...")
-        all_plot_meta.extend(generate_diagnostic_plots(dataframes["sindromica"]))
+        print("Computing smoothed incidence per diagnosis (sindromica)...")
+        diagnostic_series = build_series_for_dataset(
+            dataframes["sindromica"], date_col="data",
+            count_col="casos", group_col="diagnostic",
+        )
 
-    print(f"\nGenerated {len(all_plot_meta)} static figures. Writing Jekyll pages...")
-    for meta in all_plot_meta:
-        write_jekyll_page(meta)
+    print("\nBuilding category combined static plots (grip/vrs/altres)...")
+    build_category_static_plots(virus_series, diagnostic_series)
 
-    print("\nGenerating combined interactive charts...")
-    generate_interactive_overview(dataframes)
+    print("\nBuilding season-over-season overlay plots (grip/vrs)...")
+    build_seasonal_plots(virus_series, diagnostic_series)
+
+    print("\nBuilding combined interactive overview charts...")
+    build_interactive_overview(virus_series, diagnostic_series)
 
     print("\nDone. Now:")
-    print("  1. git add assets/ _plots/")
+    print("  1. git add assets/")
     print("  2. commit + push via GitHub Desktop")
 
 

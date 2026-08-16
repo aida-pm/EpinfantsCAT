@@ -24,6 +24,8 @@ approximation: it's an exact sum of five whole census buckets (80-84
 through 100+).
 """
 
+import pandas as pd
+
 # Raw census counts by 5-year age band and sex
 CENSUS_POPULATION = {
     "De 0 a 4 anys":   {"Home": 147327, "Dona": 139256},
@@ -132,3 +134,34 @@ def compute_age_stratified_incidence(df, date_col: str, count_col: str,
 
     grouped = subset.groupby(date_col)[count_col].sum(numeric_only=True)
     return (grouped / pop) * 100000
+
+
+def rolling_average(series, window: int = 7, center: bool = True, min_periods: int = 1):
+    """Simple rolling average smoothing (position-based, not calendar-based)."""
+    if series is None or series.empty:
+        return series
+    return series.rolling(window=window, center=center, min_periods=min_periods).mean()
+
+
+def to_daily_smoothed(series, window: int = 7, center: bool = True, min_periods: int = 1):
+    """Takes an incidence Series with WEEKLY-spaced points (as returned by
+    compute_national_incidence, since the source data is reported weekly)
+    and produces a DAILY-resolution series via linear interpolation
+    between the known weekly points, then applies a `window`-day rolling
+    average.
+
+    IMPORTANT: Catalonia's open data here is reported weekly, not daily —
+    there is no true daily granularity in the source. This function
+    interpolates smoothly between weekly points to approximate a daily
+    view (useful for smoother charts and season-over-season comparison),
+    but the underlying data resolution is still weekly. Don't present
+    this as literal daily case counts.
+    """
+    if series is None or series.empty:
+        return series
+    s = series.sort_index()
+    daily_index = pd.date_range(s.index.min(), s.index.max(), freq="D")
+    daily = s.reindex(s.index.union(daily_index)).sort_index()
+    daily = daily.interpolate(method="linear")
+    daily = daily.reindex(daily_index)
+    return daily.rolling(window=window, center=center, min_periods=min_periods).mean()

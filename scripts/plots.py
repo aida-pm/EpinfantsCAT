@@ -14,6 +14,7 @@ uses to build the Jekyll pages automatically.
 import os
 import re
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # --------------------------------------------------------------------------
 # Shared style, matching the look of the original notebook
@@ -51,6 +52,97 @@ def _save(fig, filename, images_dir):
     fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
     return path
+
+
+def plot_seasonal_overlay(series, title, ylabel="", description="",
+                           images_dir="assets/images/plots", slug=None,
+                           season_start_month=9, figsize=(12, 6)):
+    """Overlays multiple 'seasons' of a DAILY series on the same x-axis
+    (day of season, e.g. running September->August), one colored line per
+    season, so year-over-year seasonal patterns can be compared directly.
+    `series` must be a daily-resolution Series (e.g. from
+    population.to_daily_smoothed) indexed by date."""
+    set_style()
+    slug = slug or slugify(title)
+    filename = f"{slug}.png"
+
+    s = series.dropna()
+    if s.empty:
+        return None
+
+    def season_label(date):
+        start_year = date.year if date.month >= season_start_month else date.year - 1
+        return f"{start_year}-{start_year + 1}"
+
+    records = []
+    season_starts = {}
+    for date, value in s.items():
+        label = season_label(date)
+        if label not in season_starts:
+            start_year = int(label.split("-")[0])
+            season_starts[label] = pd.Timestamp(year=start_year, month=season_start_month, day=1)
+        day_offset = (date - season_starts[label]).days
+        records.append((label, day_offset, value))
+
+    df_seasons = pd.DataFrame(records, columns=["season", "day", "value"])
+    season_labels = sorted(df_seasons["season"].unique())
+
+    fig, ax = plt.subplots(figsize=figsize)
+    cmap = plt.get_cmap("viridis")
+    for i, label in enumerate(season_labels):
+        sub = df_seasons[df_seasons["season"] == label].sort_values("day")
+        color = cmap(i / max(len(season_labels) - 1, 1))
+        # de-emphasize the current/incomplete season slightly if it's the last one
+        ax.plot(sub["day"], sub["value"], label=label, color=color, linewidth=2)
+
+    month_starts = [0, 30, 61, 91, 122, 153, 181, 212, 243, 273, 304, 334]
+    month_labels = ["Set", "Oct", "Nov", "Des", "Gen", "Feb", "Mar", "Abr", "Maig", "Jun", "Jul", "Ago"]
+    ax.set_xticks(month_starts)
+    ax.set_xticklabels(month_labels)
+    ax.set_xlim(0, 365)
+
+    ax.set_ylabel(ylabel, fontsize=13)
+    ax.grid(axis="y", linestyle="--", alpha=0.6)
+    ax.set_title(title, fontsize=16, fontweight="bold")
+    ax.legend(loc="upper left", fontsize=9, ncol=2)
+    fig.tight_layout()
+
+    _save(fig, filename, images_dir)
+    return {"title": title, "filename": filename, "slug": slug, "description": description}
+
+
+def plot_combined_series(series_dict, title, ylabel="", description="",
+                          images_dir="assets/images/plots", slug=None,
+                          figsize=(12, 6)):
+    """Multiple named series on ONE static chart (e.g. all the lines
+    belonging to one category: Grip, VRS, or Altres). Automatically
+    switches to a larger color set (tab20) when there are more series
+    than the core PALETTE can distinctly represent."""
+    set_style()
+    slug = slug or slugify(title)
+    filename = f"{slug}.png"
+
+    n = len(series_dict)
+    if n <= len(PALETTE):
+        colors = list(PALETTE.values())
+    else:
+        cmap = plt.get_cmap("tab20")
+        colors = [cmap(i % 20) for i in range(n)]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    for (label, series), color in zip(series_dict.items(), colors):
+        if series is None or series.empty:
+            continue
+        ax.plot(series.index, series.values, label=label, color=color, linewidth=2)
+
+    ax.set_ylabel(ylabel, fontsize=13)
+    ax.grid(axis="y", linestyle="--", alpha=0.6)
+    ax.set_title(title, fontsize=16, fontweight="bold")
+    ax.legend(loc="upper left", fontsize=9, ncol=2 if n > 6 else 1)
+    fig.tight_layout()
+
+    _save(fig, filename, images_dir)
+    return {"title": title, "filename": filename, "slug": slug, "description": description}
 
 
 def plot_series(series, title, ylabel="", color=PALETTE["blue"], description="",
