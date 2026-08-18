@@ -2,27 +2,73 @@
 """
 generate_site_plots.py
 
-Loads both datasets, computes national incidence (per 100,000 inhabitants)
+Loads all datasets, computes national incidence (per 100,000 inhabitants)
 for every virus and every syndromic diagnosis, applies a 7-period moving
-average (matching the original notebooks' methodology), and builds:
+average, and builds:
 
-  1. THREE combined static PNGs — one per category (Grip / VRS / Altres),
-     each showing every relevant line (virus + diagnostic) together on a
-     single chart:
-         assets/images/plots/grip-combined.png
-         assets/images/plots/vrs-combined.png
-         assets/images/plots/altres-combined.png
-     These are what grip.md / vrs.md / altres.md display, and (via their
-     `image:` front matter) what shows up as the homepage tile thumbnail.
+    1. Interactive plots (Grip / VRS / COVID-19 / Altres) for diagnostics,
+     each showing the diagnostic incidence per age group and total together on a
+     single chart. For the "altres" tag, there will be a dropdown button to select
+     specific disease.
+         assets/images/interactive/grip-inc-ages.png
+         assets/images/interactive/vrs-inc-ages.png
+         assets/images/interactive/covid19-inc-ages.png
+         assets/images/interactive/altres-inc-ages.png
 
-  2. TWO combined interactive charts — all viruses in one, all diagnoses
+    2. Interactive plots (Grip / VRS / COVID-19 / Altres) for multitests,
+        showing virus incidence (left axis) together with positivity (right axis), per age
+        and total, on a single chart. For the "altres" tag, there will be a dropdown button to select
+     specific disease.
+            assets/images/interactive/grip-mt-ages.png
+            assets/images/interactive/vrs-mt-ages.png
+            assets/images/interactive/covid19-mt-ages.png
+            assets/images/interactive/altres-mt-ages.png
+
+    3. Interactive plots (Grip / VRS / COVID-19 / Altres) for diagnostics,
+     each showing a single x axis ranging from September to August, and
+     y axis with diagnostic incidence where the average pre-pandemic season is plotted, 
+     together with all seasons since 2020. This means, all epidemics since September 2014 to 
+     August 2020 are averaged into a single prepandemic average. Then, this
+     average epidemic is plotted on the graph as a grey dashed line. Then, 
+     the data is plotted from September 2020 to August 2021, from September 2021 
+     to August 2022, until the most recent data available, starting a new season from 
+     September the latest even though it is not finished. All seasons will have different
+     colours and will share the same x axis. Temporal yearly resolution will not be available,
+     only days/weeks and months will be, all seasons are put together on top of each other. This will
+     be a grid of plots, where the 1st grid is the total data, the second is the first age group, 
+     the third is the second age group, and so on for all age groups available. For the "altres" tag, 
+     there will be a dropdown button to select specific disease.
+         assets/images/interactive/grip-ontop.png
+         assets/images/interactive/vrs-ontop.png
+         assets/images/interactive/covid19-ontop.png
+         assets/images/interactive/altres-ontop.png
+
+    4. Interactive plots (Grip / VRS / COVID-19 / Altres) for multitests,
+        each showing a single x axis ranging from September to August, and
+        y axis with positive test incidence in the left and positivity in the right y axis,
+        where the average pre-pandemic season is plotted, 
+        together with all seasons since 2020. This means, all epidemics since September 2014 to 
+        August 2020 are averaged into a single prepandemic average. Then, this
+        average epidemic is plotted on the graph as a grey dashed line. Then, 
+        the data is plotted from September 2020 to August 2021, from September 2021 
+        to August 2022, until the most recent data available, starting a new season from 
+        September the latest even though it is not finished. All seasons will have different
+        colours and will share the same x axis. Temporal yearly resolution will not be available,
+        only days/weeks and months will be, all seasons are put together on top of each other. This will
+        be a grid of plots, where the 1st grid is the total data, the second is the first age group, 
+        the third is the second age group, and so on for all age groups available. For the "altres" tag, 
+        there will be a dropdown button to select specific disease.
+            assets/images/interactive/grip-mt-ontop.png
+            assets/images/interactive/vrs-mt-ontop.png
+            assets/images/interactive/covid19-mt-ontop.png
+            assets/images/interactive/altres-mt-ontop.png
+
+
+  5. TWO combined interactive charts — all viruses in one, all diagnoses
      in one, with a toggleable legend:
          assets/interactive/tots-microbiologics.html
          assets/interactive/tots-sindromes.html
-     These are embedded on the homepage (index.md) under "Massa libero".
-
-This REPLACES the old one-PNG-per-virus/per-diagnostic approach and the
-_plots collection — everything is now consolidated into these 5 outputs.
+     These are embedded on the homepage (index.md) under "Fes un cop d'ull!".
 
 Run any time you refresh your local data:
 
@@ -31,175 +77,728 @@ Run any time you refresh your local data:
 Then commit + push assets/ via GitHub Desktop (data/ stays local).
 """
 
+
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import pandas as pd
 
-from load_data import load_dataset, FILENAMES  # noqa: E402
-import plots  # noqa: E402
-import population  # noqa: E402
-import interactive  # noqa: E402
+sys.path.insert(
+    0,
+    os.path.dirname(
+        os.path.abspath(__file__)
+    ),
+)
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-IMAGES_DIR = os.path.join(REPO_ROOT, "assets", "images", "plots")
-INTERACTIVE_DIR = os.path.join(REPO_ROOT, "assets", "interactive")
-
-SMOOTH_YLABEL_SUFFIX = " (mitjana mòbil 7 dies)"
-
-
-def categorize(name: str) -> str:
-    """Groups a virus/diagnostic name into one of three site categories."""
-    n = name.lower()
-    if "grip" in n:
-        return "grip"
-    if n == "vrs" or "vrs" in n:
-        return "vrs"
-    return "altres"
+from load_data import load_all_datasets
+import interactive
+import population
 
 
-def build_series_for_dataset(df, date_col, count_col, group_col):
-    """Returns {name: 7-day-smoothed incidence Series} for every distinct
-    value in group_col (e.g. every virus, or every diagnostic). Groups
-    directly by the real date_col values (daily), no interpolation."""
-    result = {}
-    for value in sorted(df[group_col].dropna().unique().tolist()):
-        subset = df[df[group_col] == value]
-        s = population.compute_national_incidence(subset, date_col=date_col, count_col=count_col)
-        if not s.empty:
-            result[value] = population.rolling_average(s, window=7, center=True, min_periods=1)
+REPO_ROOT = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+INTERACTIVE_DIR = os.path.join(
+    REPO_ROOT,
+    "assets",
+    "interactive",
+)
+
+
+CATEGORY_NAMES = [
+    "grip",
+    "vrs",
+    "covid19",
+    "altres",
+]
+
+
+def ensure_output_dirs():
+    os.makedirs(
+        INTERACTIVE_DIR,
+        exist_ok=True,
+    )
+
+
+def prepare_sindromic(
+    df,
+    population_df,
+):
+    """
+    Prepare daily syndromic data.
+
+    Output:
+
+        data
+        diagnostic
+        grup_edat
+        count
+        poblacio
+        incidencia
+
+    Incidence is calculated nationally and then smoothed over seven
+    calendar observations.
+
+    The source is daily, so the seven-period window is seven days.
+    """
+    required = {
+        "data",
+        "diagnostic",
+        "grup_edat",
+        "casos",
+    }
+
+    missing = required - set(df.columns)
+
+    if missing:
+        raise ValueError(
+            "Syndromic dataset is missing: "
+            + ", ".join(sorted(missing))
+        )
+
+    work = df.copy()
+
+    work["data"] = pd.to_datetime(
+        work["data"],
+        errors="coerce",
+    )
+
+    work["casos"] = pd.to_numeric(
+        work["casos"],
+        errors="coerce",
+    )
+
+    work = work.dropna(
+        subset=[
+            "data",
+            "diagnostic",
+            "grup_edat",
+            "casos",
+        ]
+    )
+
+    # National age-specific incidence.
+    incidence = population.compute_incidence(
+        work,
+        population_df,
+        date_col="data",
+        count_col="casos",
+        group_cols=[
+            "diagnostic",
+            "grup_edat",
+        ],
+    )
+
+    # Seven-day moving average applies ONLY here.
+    incidence = population.rolling_average(
+        incidence,
+        value_col="incidencia",
+        group_cols=[
+            "diagnostic",
+            "grup_edat",
+        ],
+        window=7,
+    )
+
+    return incidence
+
+
+def prepare_multitests(
+    positives,
+    tests,
+    population_df,
+):
+    """
+    Combine the weekly positive-test and total-test datasets.
+
+    The positive dataset identifies which virus was detected.
+
+    The total-test dataset supplies the denominator for positivity.
+
+    Because total tests do not necessarily contain a virus dimension,
+    the total-test denominator is joined to each virus after aggregation
+    at the relevant week/age dimensions.
+
+    Output columns:
+
+        data
+        virus
+        grup_edat
+        positive
+        total_tests
+        poblacio
+        incidence
+        positivity
+
+    NO moving average is applied.
+    """
+    required_positive = {
+        "data_inici",
+        "virus",
+        "grup_edat",
+        "positiu",
+    }
+
+    required_tests = {
+        "data_inici",
+        "grup_edat",
+        "total",
+    }
+
+    missing_positive = (
+        required_positive - set(positives.columns)
+    )
+
+    missing_tests = (
+        required_tests - set(tests.columns)
+    )
+
+    if missing_positive:
+        raise ValueError(
+            "Multitest positive dataset is missing: "
+            + ", ".join(sorted(missing_positive))
+        )
+
+    if missing_tests:
+        raise ValueError(
+            "Multitest total-test dataset is missing: "
+            + ", ".join(sorted(missing_tests))
+        )
+
+    pos = positives.copy()
+    test = tests.copy()
+
+    pos["data_inici"] = pd.to_datetime(
+        pos["data_inici"],
+        errors="coerce",
+    )
+
+    test["data_inici"] = pd.to_datetime(
+        test["data_inici"],
+        errors="coerce",
+    )
+
+    pos["positiu"] = pd.to_numeric(
+        pos["positiu"],
+        errors="coerce",
+    )
+
+    test["total"] = pd.to_numeric(
+        test["total"],
+        errors="coerce",
+    )
+
+    pos = pos.dropna(
+        subset=[
+            "data_inici",
+            "virus",
+            "grup_edat",
+            "positiu",
+        ]
+    )
+
+    test = test.dropna(
+        subset=[
+            "data_inici",
+            "grup_edat",
+            "total",
+        ]
+    )
+
+    # ----------------------------------------
+    # Positive detections
+    # ----------------------------------------
+    positive_group = (
+        pos.groupby(
+            [
+                "data_inici",
+                "virus",
+                "grup_edat",
+            ],
+            observed=True,
+            dropna=False,
+        )["positiu"]
+        .sum()
+        .reset_index()
+        .rename(
+            columns={
+                "data_inici": "data",
+                "positiu": "positive",
+            }
+        )
+    )
+
+    # ----------------------------------------
+    # Total tests
+    # ----------------------------------------
+    tests_group = (
+        test.groupby(
+            [
+                "data_inici",
+                "grup_edat",
+            ],
+            observed=True,
+            dropna=False,
+        )["total"]
+        .sum()
+        .reset_index()
+        .rename(
+            columns={
+                "data_inici": "data",
+                "total": "total_tests",
+            }
+        )
+    )
+
+    # ----------------------------------------
+    # Population
+    # ----------------------------------------
+    #
+    # The multitest data is weekly. The syndromic population is daily.
+    #
+    # Convert the population denominator to the same weekly start dates.
+    #
+    pop = population_df.copy()
+
+    pop["data"] = pd.to_datetime(
+        pop["data"],
+        errors="coerce",
+    )
+
+    # Find the Monday corresponding to each date.
+    pop["week_start"] = (
+        pop["data"]
+        - pd.to_timedelta(
+            pop["data"].dt.weekday,
+            unit="D",
+        )
+    )
+
+    pop_weekly = (
+        pop.groupby(
+            [
+                "week_start",
+                "grup_edat",
+            ],
+            observed=True,
+            dropna=False,
+        )["poblacio"]
+        .mean()
+        .reset_index()
+        .rename(
+            columns={
+                "week_start": "data",
+            }
+        )
+    )
+
+    # ----------------------------------------
+    # Normalize source week dates
+    # ----------------------------------------
+    positive_group["data"] = (
+        positive_group["data"]
+        - pd.to_timedelta(
+            positive_group["data"].dt.weekday,
+            unit="D",
+        )
+    )
+
+    tests_group["data"] = (
+        tests_group["data"]
+        - pd.to_timedelta(
+            tests_group["data"].dt.weekday,
+            unit="D",
+        )
+    )
+
+    # ----------------------------------------
+    # Join positives + total tests + population
+    # ----------------------------------------
+    result = positive_group.merge(
+        tests_group,
+        on=[
+            "data",
+            "grup_edat",
+        ],
+        how="left",
+    )
+
+    result = result.merge(
+        pop_weekly,
+        on=[
+            "data",
+            "grup_edat",
+        ],
+        how="left",
+    )
+
+    result["incidencia"] = (
+        result["positive"]
+        / result["poblacio"]
+        * 100_000
+    )
+
+    result.loc[
+        result["poblacio"] <= 0,
+        "incidencia",
+    ] = pd.NA
+
+    result["positivity"] = (
+        result["positive"]
+        / result["total_tests"]
+        * 100
+    )
+
+    result.loc[
+        result["total_tests"] <= 0,
+        "positivity",
+    ] = pd.NA
+
     return result
 
 
-def build_category_static_plots(virus_series, diagnostic_series):
-    """Builds ONE combined static PNG per category (grip/vrs/altres),
-    mixing both sources when relevant (e.g. Grip's virus-detection line
-    together with Grip's syndromic-diagnosis line)."""
-    combined = {"grip": {}, "vrs": {}, "altres": {}}
+def split_categories(
+    df,
+    name_col,
+):
+    """
+    Return:
 
-    for name, s in virus_series.items():
-        combined[categorize(name)][f"{name} (microbiològica)"] = s
-    for name, s in diagnostic_series.items():
-        combined[categorize(name)][f"{name} (sindròmica)"] = s
-
-    titles = {
-        "grip": "Grip",
-        "vrs": "VRS",
-        "altres": "Altres virus i síndromes",
+        {
+            "grip": DataFrame,
+            "vrs": DataFrame,
+            "covid19": DataFrame,
+            "altres": DataFrame,
+        }
+    """
+    result = {
+        category: df.iloc[0:0].copy()
+        for category in CATEGORY_NAMES
     }
-    results = {}
 
-    for cat, series_dict in combined.items():
-        if not series_dict:
-            print(f"  [{cat}] no data available, skipping.")
+    if df.empty:
+        return result
+
+    category_series = (
+        df[name_col]
+        .astype(str)
+        .map(interactive.categorize)
+    )
+
+    for category in CATEGORY_NAMES:
+        result[category] = df[
+            category_series == category
+        ].copy()
+
+    return result
+
+
+def build_sindromic_plots(
+    sindromic,
+):
+    """
+    Build:
+
+        grip-inc-ages.html
+        vrs-inc-ages.html
+        covid19-inc-ages.html
+        altres-inc-ages.html
+
+        grip-ontop.html
+        vrs-ontop.html
+        covid19-ontop.html
+        altres-ontop.html
+    """
+    categories = split_categories(
+        sindromic,
+        "diagnostic",
+    )
+
+    for category, df in categories.items():
+        if df.empty:
+            print(
+                f"  [{category}] no syndromic data."
+            )
             continue
 
-        title = titles[cat]
-        meta = plots.plot_combined_series(
-            series_dict,
-            title=title,
-            ylabel="Casos / positius per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
-            description=(
-                f"Evolució combinada (mitjana mòbil ~7 setmanes) de totes les "
-                f"figures de la categoria {title}, combinant vigilància "
-                f"sindròmica i microbiològica quan escau."
+        age_output = os.path.join(
+            INTERACTIVE_DIR,
+            f"{category}-inc-ages.html",
+        )
+
+        interactive.build_incidence_by_age(
+            df,
+            category=category,
+            disease_col="diagnostic",
+            value_col="incidencia",
+            output_path=age_output,
+        )
+
+        seasonal_output = os.path.join(
+            INTERACTIVE_DIR,
+            f"{category}-ontop.html",
+        )
+
+        interactive.build_seasonal_incidence(
+            df,
+            category=category,
+            disease_col="diagnostic",
+            output_path=seasonal_output,
+        )
+
+
+def build_multitest_plots(
+    multitests,
+):
+    """
+    Build:
+
+        grip-mt-ages.html
+        vrs-mt-ages.html
+        covid19-mt-ages.html
+        altres-mt-ages.html
+
+        grip-mt-ontop.html
+        vrs-mt-ontop.html
+        covid19-mt-ontop.html
+        altres-mt-ontop.html
+    """
+    categories = split_categories(
+        multitests,
+        "virus",
+    )
+
+    for category, df in categories.items():
+        if df.empty:
+            print(
+                f"  [{category}] no multitest data."
+            )
+            continue
+
+        age_output = os.path.join(
+            INTERACTIVE_DIR,
+            f"{category}-mt-ages.html",
+        )
+
+        interactive.build_multitest_by_age(
+            df,
+            category=category,
+            output_path=age_output,
+        )
+
+        seasonal_output = os.path.join(
+            INTERACTIVE_DIR,
+            f"{category}-mt-ontop.html",
+        )
+
+        interactive.build_seasonal_multitest(
+            df,
+            category=category,
+            output_path=seasonal_output,
+        )
+
+
+def build_homepage_plots(
+    sindromic,
+    multitests,
+):
+    """
+    Build:
+
+        tots-microbiologics.html
+        tots-sindromes.html
+    """
+    if not multitests.empty:
+        interactive.build_combined_viruses(
+            multitests,
+            os.path.join(
+                INTERACTIVE_DIR,
+                "tots-microbiologics.html",
             ),
-            images_dir=IMAGES_DIR,
-            slug=f"{cat}-combined",
         )
-        results[cat] = meta
-        print(f"  [{cat}] {len(series_dict)} línies -> {meta['filename']}")
 
-    return results
-
-
-def build_seasonal_plots(virus_series, diagnostic_series):
-    """Season-over-season overlay charts (Sept-Aug), for the signals where
-    this comparison is most meaningful: Grip and VRS. Each season gets its
-    own colored line on a shared "day of season" x-axis, in addition to
-    (not replacing) the full-timeline combined charts built above."""
-    targets = []
-    if "Grip" in virus_series:
-        targets.append(("grip-virus-seasonal", "Grip — vigilància microbiològica, per temporada", virus_series["Grip"]))
-    if "Grip" in diagnostic_series:
-        targets.append(("grip-diagnostic-seasonal", "Grip — vigilància sindròmica, per temporada", diagnostic_series["Grip"]))
-    if "VRS" in virus_series:
-        targets.append(("vrs-virus-seasonal", "VRS — vigilància microbiològica, per temporada", virus_series["VRS"]))
-
-    results = {}
-    for slug, title, series in targets:
-        meta = plots.plot_seasonal_overlay(
-            series,
-            title=title,
-            ylabel="Incidència per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
-            description=f"Comparació de temporades (setembre-agost) per a {title}.",
-            images_dir=IMAGES_DIR,
-            slug=slug,
+    if not sindromic.empty:
+        interactive.build_combined_diagnoses(
+            sindromic,
+            os.path.join(
+                INTERACTIVE_DIR,
+                "tots-sindromes.html",
+            ),
         )
-        if meta:
-            results[slug] = meta
-            print(f"  [seasonal] {meta['filename']}")
-    return results
 
 
-def build_interactive_overview(virus_series, diagnostic_series):
-    if virus_series:
-        interactive.build_interactive_lines(
-            virus_series,
-            title="Tots els virus — vigilància microbiològica",
-            ylabel="Casos positius per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
-            output_path=os.path.join(INTERACTIVE_DIR, "tots-microbiologics.html"),
+def print_summary(
+    sindromic,
+    multitests,
+):
+    print("\n" + "=" * 70)
+    print("GENERATED DATA SUMMARY")
+    print("=" * 70)
+
+    print(
+        f"Syndromic rows:  {len(sindromic):,}"
+    )
+
+    if not sindromic.empty:
+        print(
+            "Syndromic date range: "
+            f"{sindromic['data'].min().date()} → "
+            f"{sindromic['data'].max().date()}"
         )
-    if diagnostic_series:
-        interactive.build_interactive_lines(
-            diagnostic_series,
-            title="Totes les síndromes — vigilància sindròmica",
-            ylabel="Casos per 100.000 hab." + SMOOTH_YLABEL_SUFFIX,
-            output_path=os.path.join(INTERACTIVE_DIR, "tots-sindromes.html"),
+
+        print(
+            "Diagnoses: "
+            f"{sindromic['diagnostic'].nunique()}"
         )
+
+        print(
+            "Age groups: "
+            f"{sindromic['grup_edat'].nunique()}"
+        )
+
+    print(
+        f"Multitest rows:  {len(multitests):,}"
+    )
+
+    if not multitests.empty:
+        print(
+            "Multitest date range: "
+            f"{multitests['data'].min().date()} → "
+            f"{multitests['data'].max().date()}"
+        )
+
+        print(
+            "Viruses: "
+            f"{multitests['virus'].nunique()}"
+        )
+
+        print(
+            "Age groups: "
+            f"{multitests['grup_edat'].nunique()}"
+        )
+
+    print("=" * 70)
 
 
 def main():
-    dataframes = {}
-    for name, filename in FILENAMES.items():
-        try:
-            dataframes[name] = load_dataset(name, filename)
-        except FileNotFoundError as e:
-            print(f"WARNING: {e}", file=sys.stderr)
+    ensure_output_dirs()
 
-    if not dataframes:
-        print("No datasets loaded — check data/ folder and FILENAMES in load_data.py.", file=sys.stderr)
+    print("=" * 70)
+    print("Loading datasets")
+    print("=" * 70)
+
+    datasets = load_all_datasets()
+
+    required = {
+        "sindromica",
+        "multitests_positius",
+        "multitests_tests",
+    }
+
+    missing = required - set(datasets)
+
+    if missing:
+        print(
+            "\nERROR: required datasets are missing:",
+            ", ".join(sorted(missing)),
+            file=sys.stderr,
+        )
+
         sys.exit(1)
 
-    virus_series = {}
-    diagnostic_series = {}
+    sindromica_raw = datasets[
+        "sindromica"
+    ]
 
-    if "microbiologica" in dataframes:
-        print("Computing smoothed incidence per virus (microbiologica)...")
-        virus_series = build_series_for_dataset(
-            dataframes["microbiologica"], date_col="data_inici",
-            count_col="positiu", group_col="virus",
-        )
+    multitests_positius = datasets[
+        "multitests_positius"
+    ]
 
-    if "sindromica" in dataframes:
-        print("Computing smoothed incidence per diagnosis (sindromica)...")
-        diagnostic_series = build_series_for_dataset(
-            dataframes["sindromica"], date_col="data",
-            count_col="casos", group_col="diagnostic",
-        )
+    multitests_tests = datasets[
+        "multitests_tests"
+    ]
 
-    print("\nBuilding category combined static plots (grip/vrs/altres)...")
-    build_category_static_plots(virus_series, diagnostic_series)
+    print("\n" + "=" * 70)
+    print("Building population denominator")
+    print("=" * 70)
 
-    print("\nBuilding season-over-season overlay plots (grip/vrs)...")
-    build_seasonal_plots(virus_series, diagnostic_series)
+    population_df = population.aggregate_population(
+        sindromica_raw
+    )
 
-    print("\nBuilding combined interactive overview charts...")
-    build_interactive_overview(virus_series, diagnostic_series)
+    print(
+        f"Population rows: {len(population_df):,}"
+    )
 
-    print("\nDone. Now:")
-    print("  1. git add assets/")
-    print("  2. commit + push via GitHub Desktop")
+    print("\n" + "=" * 70)
+    print("Preparing syndromic surveillance")
+    print("=" * 70)
+
+    sindromic = prepare_sindromic(
+        sindromica_raw,
+        population_df,
+    )
+
+    print(
+        f"Prepared syndromic rows: "
+        f"{len(sindromic):,}"
+    )
+
+    print("\n" + "=" * 70)
+    print("Preparing multitest surveillance")
+    print("=" * 70)
+
+    multitests = prepare_multitests(
+        positives=multitests_positius,
+        tests=multitests_tests,
+        population_df=population_df,
+    )
+
+    print(
+        f"Prepared multitest rows: "
+        f"{len(multitests):,}"
+    )
+
+    print("\n" + "=" * 70)
+    print("Building syndromic interactive plots")
+    print("=" * 70)
+
+    build_sindromic_plots(
+        sindromic
+    )
+
+    print("\n" + "=" * 70)
+    print("Building multitest interactive plots")
+    print("=" * 70)
+
+    build_multitest_plots(
+        multitests
+    )
+
+    print("\n" + "=" * 70)
+    print("Building homepage interactive plots")
+    print("=" * 70)
+
+    build_homepage_plots(
+        sindromic,
+        multitests,
+    )
+
+    print_summary(
+        sindromic,
+        multitests,
+    )
+
+    print("\nDone.")
+    print(
+        f"Interactive plots are in: {INTERACTIVE_DIR}"
+    )
+    print("\nNext:")
+    print("  git add assets/")
+    print("  commit + push via GitHub Desktop")
 
 
 if __name__ == "__main__":

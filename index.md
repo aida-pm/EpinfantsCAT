@@ -2,24 +2,28 @@
 layout: home
 title: Home
 landing-title: 'EpinfantsCAT'
-description: 'Vigilància epidemiològica d''infeccions pediàtriques a Catalunya.'
+description: 'Vigilància epidemiològica d''infeccions respiratòries als infants de Catalunya.'
 image: null
 author: null
 show_tile: false
 ---
 
-EpinfantsCAT recull i visualitza dades públiques de vigilància epidemiològica pediàtrica a Catalunya, combinant la vigilància sindròmica d'infeccions a Atenció Primària amb la vigilància microbiològica sentinella. Els gràfics mostren la incidència setmanal (per 100.000 habitants), amb una mitjana mòbil d'~7 setmanes.
+EpinfantsCAT recull i visualitza dades públiques de vigilància epidemiològica pediàtrica a Catalunya (obtingudes de SIVIC), combinant la vigilància sindròmica d'infeccions a Atenció Primària amb la vigilància microbiològica sentinella mitjançant multitests.
+
+Les dades sindròmiques tenen resolució diària i es representen amb una mitjana mòbil de 7 dies. Les dades dels multitests tenen resolució setmanal i es mostren sense suavització, tant per a la incidència de proves positives com per al percentatge de positivitat.
+
 
 <!--
-  CATEGORY CARDS — Grip / VRS / Altres
-  --------------------------------------
-  Explicit thumbnails+links to the three category pages (grip.md, vrs.md,
-  altres.md). Images are the combined static PNGs built by
-  scripts/generate_site_plots.py.
+  CATEGORY CARDS
+  -----------------------------------------------------
+  Grip / VRS / COVID-19 / Altres
 -->
 
 <section id="category-cards" style="padding: 2rem 0;">
-  <h2 style="text-align:center; margin-bottom: 2rem;">Categories</h2>
+
+  <h2 style="text-align:center; margin-bottom: 2rem;">
+    Categories
+  </h2>
 
   <div class="category-grid" style="
       display: grid;
@@ -28,58 +32,232 @@ EpinfantsCAT recull i visualitza dades públiques de vigilància epidemiològica
       max-width: 1100px;
       margin: 0 auto;
   ">
+
+    <!-- GRIP -->
+
     <a href="{{ '/grip.html' | relative_url }}" class="category-card" style="
-        display: block; text-decoration: none; color: inherit;
-        border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #27AE60;
     ">
-      <img src="{{ '/assets/images/plots/grip-combined.png' | relative_url }}" alt="Grip"
-           style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 1rem;"><h3 style="margin:0;">Grip</h3></div>
+
+      <img
+        src="{{ '/assets/images/plots/grip-titol.png' | relative_url }}"
+        alt="Grip"
+        style="
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          display: block;
+        "
+      >
+
+      <div style="padding: 1rem;">
+        <h3 style="margin:0; color: #ffffff;">
+          Grip
+        </h3>
+      </div>
+
     </a>
+
+
+    <!-- VRS -->
 
     <a href="{{ '/vrs.html' | relative_url }}" class="category-card" style="
-        display: block; text-decoration: none; color: inherit;
-        border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #16A085;
     ">
-      <img src="{{ '/assets/images/plots/vrs-combined.png' | relative_url }}" alt="VRS"
-           style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 1rem;"><h3 style="margin:0;">VRS</h3></div>
+
+      <img
+        src="{{ '/assets/images/plots/vrs-titol.png' | relative_url }}"
+        alt="VRS"
+        style="
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          display: block;
+        "
+      >
+
+      <div style="padding: 1rem;">
+        <h3 style="margin:0; color: #ffffff;">
+          VRS
+        </h3>
+      </div>
+
     </a>
+
+
+    <!-- COVID-19 -->
+
+    <a href="{{ '/covid19.html' | relative_url }}" class="category-card" style="
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #E67E22;
+    ">
+
+      <img
+        src="{{ '/assets/images/plots/covid19-titol.png' | relative_url }}"
+        alt="COVID-19"
+        style="
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          display: block;
+        "
+      >
+
+      <div style="padding: 1rem;">
+        <h3 style="margin:0; color: #ffffff;">
+          COVID-19
+        </h3>
+      </div>
+
+    </a>
+
+
+    <!-- ALTRES -->
 
     <a href="{{ '/altres.html' | relative_url }}" class="category-card" style="
-        display: block; text-decoration: none; color: inherit;
-        border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #9B59B6;
     ">
-      <img src="{{ '/assets/images/plots/altres-combined.png' | relative_url }}" alt="Altres"
-           style="width: 100%; height: 200px; object-fit: cover; display: block;">
-      <div style="padding: 1rem;"><h3 style="margin:0;">Altres</h3></div>
+
+      <img
+        src="{{ '/assets/images/plots/altres-titol.png' | relative_url }}"
+        alt="Altres"
+        style="
+          width: 100%;
+          height: 200px;
+          object-fit: cover;
+          display: block;
+        "
+      >
+
+      <div style="padding: 1rem;">
+        <h3 style="margin:0; color: #ffffff;">
+          Altres
+        </h3>
+      </div>
+
     </a>
+
   </div>
+
 </section>
 
+
 <!--
-  MASSA LIBERO — combined interactive overview charts
+  FES UN COP D'ULL!
   -----------------------------------------------------
-  Two standalone interactive Plotly charts (all diagnoses, all viruses),
-  generated by scripts/generate_site_plots.py into assets/interactive/.
-  Rename this heading to whatever you'd like.
+  Two combined interactive overview charts:
+
+  1. All syndromic diagnoses
+  2. All multitest viruses
+
+  Generated by scripts/generate_site_plots.py
+  into assets/interactive/
 -->
 
-<section id="massa-libero" style="padding: 2rem 0;">
-  <div class="inner" style="max-width: 1100px; margin: 0 auto;">
-    <header class="major" style="text-align:center; margin-bottom: 2rem;">
-      <h2>Massa libero</h2>
-      <p>Visió general interactiva: passa el cursor per veure valors, i clica sobre qualsevol element de la llegenda per amagar-lo o mostrar-lo.</p>
+<section id="cop-dull" style="padding: 2rem 0;">
+
+  <div class="inner" style="
+      max-width: 1100px;
+      margin: 0 auto;
+  ">
+
+    <header class="major" style="
+        text-align:center;
+        margin-bottom: 2rem;
+    ">
+
+      <h2>Fes un cop d'ull!</h2>
+
+      <p>
+        Visió general interactiva de la vigilància epidemiològica.
+        Passa el cursor per consultar els valors i clica sobre els
+        elements de la llegenda per mostrar-los o amagar-los.
+      </p>
+
     </header>
 
-    <h3>Totes les síndromes</h3>
-    <iframe src="{{ '/assets/interactive/tots-sindromes.html' | relative_url }}"
-            style="width: 100%; height: 550px; border: 1px solid #e5e5e5; border-radius: 8px;"
-            loading="lazy"></iframe>
 
-    <h3 style="margin-top: 2rem;">Tots els virus (microbiològica)</h3>
-    <iframe src="{{ '/assets/interactive/tots-microbiologics.html' | relative_url }}"
-            style="width: 100%; height: 550px; border: 1px solid #e5e5e5; border-radius: 8px;"
-            loading="lazy"></iframe>
+    <!-- ========================================================= -->
+    <!-- TOTS ELS DIAGNÒSTICS                                      -->
+    <!-- ========================================================= -->
+
+    <h3>Tots els diagnòstics</h3>
+
+    <p>
+      Incidència diària dels diagnòstics vigilats mitjançant la
+      vigilància sindròmica, amb una mitjana mòbil de 7 dies.
+    </p>
+
+    <div class="iframe-container">
+
+      <iframe
+        src="{{ '/assets/interactive/tots-sindromes.html' | relative_url }}"
+        title="Tots els diagnòstics — vigilància sindròmica"
+        style="
+          width: 100%;
+          height: 600px;
+          border: 1px solid #e5e5e5;
+          border-radius: 8px;
+        "
+        loading="lazy"
+        frameborder="0"
+        allowfullscreen>
+      </iframe>
+
+    </div>
+
+
+    <!-- ========================================================= -->
+    <!-- TOTS ELS VIRUS — MULTITESTS                               -->
+    <!-- ========================================================= -->
+
+    <h3 style="margin-top: 2rem;">
+      Tots els virus — multitests
+    </h3>
+
+    <p>
+      Incidència setmanal de proves positives dels diferents virus
+      detectats mitjançant multitests. Les dades es mostren sense
+      suavització.
+    </p>
+
+    <div class="iframe-container">
+
+      <iframe
+        src="{{ '/assets/interactive/tots-microbiologics.html' | relative_url }}"
+        title="Tots els virus — multitests"
+        style="
+          width: 100%;
+          height: 600px;
+          border: 1px solid #e5e5e5;
+          border-radius: 8px;
+        "
+        loading="lazy"
+        frameborder="0"
+        allowfullscreen>
+      </iframe>
+
+    </div>
+
   </div>
+
 </section>

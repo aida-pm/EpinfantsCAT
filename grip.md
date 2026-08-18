@@ -1,30 +1,128 @@
 ---
 layout: page
 title: Grip
-image: /assets/images/plots/grip-combined.png
+image: /assets/images/plots/grip-titol.png
 nav-menu: true
 ---
 
 <div id="main" class="alt">
+
 <section id="one">
-	<div class="inner">
-		<header class="major">
-			<h1>Grip</h1>
-		</header>
-		<p>Evolució combinada de la grip, mostrant tant la vigilància sindròmica d'Atenció Primària com la vigilància microbiològica sentinella en un mateix gràfic (mitjana mòbil d'~7 setmanes).</p>
+    <div class="inner">
 
-		<span class="image fit">
-			<img src="{{ '/assets/images/plots/grip-combined.png' | relative_url }}" alt="Grip — evolució combinada">
-		</span>
+        <header class="major">
+            <h1>Grip</h1>
+        </header>
 
-		<h2>Comparació de temporades</h2>
-		<p>Cada línia de color representa una temporada (setembre a agost), per veure com es compara la temporada actual amb les anteriors.</p>
-		<span class="image fit">
-			<img src="{{ '/assets/images/plots/grip-virus-seasonal.png' | relative_url }}" alt="Grip — vigilància microbiològica, per temporada">
-		</span>
-		<span class="image fit">
-			<img src="{{ '/assets/images/plots/grip-diagnostic-seasonal.png' | relative_url }}" alt="Grip — vigilància sindròmica, per temporada">
-		</span>
-	</div>
+        <p>
+            Evolució de la grip a partir de la vigilància sindròmica
+            d'Atenció Primària i de la vigilància microbiològica
+            sentinella.
+        </p>
+
+
+        <!-- ========================================================= -->
+        <!-- SINDRÒMICA                                                -->
+        <!-- ========================================================= -->
+
+        <header class="major">
+            <h2>Vigilància sindròmica</h2>
+        </header>
+
+        <p>
+            Incidència de la síndrome gripal per grup d'edat i total.
+            Les dades sindròmiques són diàries i es representen amb
+            una mitjana mòbil de 7 dies.
+        </p>
+
+        <div class="iframe-container">
+            <iframe
+                src="{{ '/assets/interactive/grip-inc-ages.html' | relative_url }}"
+                title="Grip — incidència sindròmica per grup d'edat"
+                loading="lazy"
+                frameborder="0"
+                allowfullscreen>
+            </iframe>
+        </div>
+
+
+        <!-- ========================================================= -->
+        <!-- SINDRÒMICA — TEMPORADES                                   -->
+        <!-- ========================================================= -->
+
+        <header class="major">
+            <h3>Comparació de temporades</h3>
+        </header>
+
+        <p>
+            Comparació de les temporades des de 2020 amb la temporada
+            prepandèmica mitjana. Cada temporada es representa sobre
+            el mateix eix setembre-agost.
+        </p>
+
+        <div class="iframe-container">
+            <iframe
+                src="{{ '/assets/interactive/grip-ontop.html' | relative_url }}"
+                title="Grip — incidència sindròmica per temporada"
+                loading="lazy"
+                frameborder="0"
+                allowfullscreen>
+            </iframe>
+        </div>
+
+
+        <!-- ========================================================= -->
+        <!-- MULTITESTS                                                -->
+        <!-- ========================================================= -->
+
+        <header class="major">
+            <h2>Vigilància microbiològica — multitests</h2>
+        </header>
+
+        <p>
+            Incidència de proves positives de grip i percentatge de
+            positivitat, per grup d'edat i total. Les dades dels
+            multitests són setmanals i es representen sense
+            suavització.
+        </p>
+
+        <div class="iframe-container">
+            <iframe
+                src="{{ '/assets/interactive/grip-mt-ages.html' | relative_url }}"
+                title="Grip — multitests per grup d'edat"
+                loading="lazy"
+                frameborder="0"
+                allowfullscreen>
+            </iframe>
+        </div>
+
+
+        <!-- ========================================================= -->
+        <!-- MULTITESTS — TEMPORADES                                   -->
+        <!-- ========================================================= -->
+
+        <header class="major">
+            <h3>Comparació de temporades</h3>
+        </header>
+
+        <p>
+            Comparació de les temporades de grip des de 2020 amb la
+            temporada prepandèmica mitjana. Es mostren la incidència
+            de proves positives i la positivitat sobre el mateix eix
+            setembre-agost.
+        </p>
+
+        <div class="iframe-container">
+            <iframe
+                src="{{ '/assets/interactive/grip-mt-ontop.html' | relative_url }}"
+                title="Grip — multitests per temporada"
+                loading="lazy"
+                frameborder="0"
+                allowfullscreen>
+            </iframe>
+        </div>
+
+    </div>
 </section>
+
 </div>
