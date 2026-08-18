@@ -80,7 +80,6 @@ DTYPE_SPECS = {
             "grup_edat": "category",
             "index_socioeconomic": "category",
             "total": "Int64",
-            "positiu": "Int64",
         },
         "dates": ["data_inici", "data_final"],
         "date_format": "%d/%m/%Y",
@@ -312,14 +311,18 @@ def load_dataset(name: str, filename: str):
 
     return df
 
+ALLOWED_AGE_GROUPS = [
+    "0",
+    "1 i 2",
+    "3 i 4",
+    "5 a 9",
+    "10 a 14",
+]
 
 def load_all_datasets():
     """
-    Load all available datasets and keep only the age groups used
-    by the website.
-
-    Returns:
-        dict[str, pandas.DataFrame]
+    Load all available datasets and keep only the age groups
+    used by the website.
     """
     datasets = {}
 
@@ -330,11 +333,10 @@ def load_all_datasets():
                 filename,
             )
 
-            # Keep only the age groups used by the website.
-            df = population.filter_allowed_age_groups(
-                df,
-                age_col="grup_edat",
-            )
+            if "grup_edat" in df.columns:
+                df = df[
+                    df["grup_edat"].isin(ALLOWED_AGE_GROUPS)
+                ].copy()
 
             datasets[name] = df
 
