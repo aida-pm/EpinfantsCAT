@@ -29,7 +29,7 @@ show_tile: false
         </p>
         <ul>
             <li>
-                <strong>Vigilància sindròmica</strong> d'Atenció Primària:
+                <strong>Vigilància sindròmica</strong> d'atenció primària:
                 dades diàries del nombre de casos per diagnòstic, grup
                 d'edat i regió sanitària.
             </li>
@@ -39,6 +39,9 @@ show_tile: false
                 per virus, que permeten calcular tant la incidència de
                 proves positives com el percentatge de positivitat.
             </li>
+            <li>
+                Totes les dades són de [SIVIC](https://sivic.salut.gencat.cat/dades_obertes)            
+            </li>
         </ul>
 
         <header class="major">
@@ -47,17 +50,17 @@ show_tile: false
 
         <p>
             Totes les incidències es calculen per 100.000 habitants,
-            utilitzant com a denominador la població oficial de
+            utilitzant com a denominador la població oficial assignada als centres d'atenció primària de
             Catalunya per als grups d'edat pediàtrics vigilats (0,
             1-2, 3-4, 5-9 i 10-14 anys), a partir de les dades de
-            població per edat individual publicades anualment.
+            població assignada de [SIVIC](https://sivic.salut.gencat.cat/dades_obertes). 
         </p>
 
         <p>
             Les dades sindròmiques, de resolució diària, es
             representen amb una mitjana mòbil de 7 dies per suavitzar
             el soroll de dia a dia. Les dades dels multitests, de
-            resolució setmanal, es mostren sense suavització addicional.
+            resolució setmanal, es mostren sense pre-processat addicional.
         </p>
 
         <header class="major">
@@ -81,6 +84,9 @@ show_tile: false
             El codi que genera aquest lloc web és obert. Les dades
             s'actualitzen periòdicament a mesura que SIVIC en publica
             de noves.
+            <li>
+                El codi d'aquesta pàgina s'ha co-creat amb Claude, d'Anthropic.     
+            </li>
         </p>
 
     </div>

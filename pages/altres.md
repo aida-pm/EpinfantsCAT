@@ -41,7 +41,8 @@ tile_color: altres
                 title="Altres — incidència sindròmica per grup d'edat"
                 loading="lazy"
                 frameborder="0"
-                allowfullscreen>
+                allowfullscreen
+                style="width: 100%; height: 450px;">
             </iframe>
         </div>
 
@@ -67,7 +68,8 @@ tile_color: altres
                 title="Altres — incidència sindròmica per temporada"
                 loading="lazy"
                 frameborder="0"
-                allowfullscreen>
+                allowfullscreen
+                style="width: 100%; height: 450px;">
             </iframe>
         </div>
 
@@ -94,7 +96,8 @@ tile_color: altres
                 title="Altres — multitests per grup d'edat"
                 loading="lazy"
                 frameborder="0"
-                allowfullscreen>
+                allowfullscreen
+                style="width: 100%; height: 450px;">
             </iframe>
         </div>
 
@@ -120,7 +123,8 @@ tile_color: altres
                 title="Altres — multitests per temporada"
                 loading="lazy"
                 frameborder="0"
-                allowfullscreen>
+                allowfullscreen
+                style="width: 100%; height: 450px;">
             </iframe>
         </div>
 
