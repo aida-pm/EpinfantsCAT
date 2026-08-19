@@ -1,7 +1,7 @@
 ---
 layout: page
 title: COVID-19
-image: /assets/images/plots/covid19-titol.png
+image: /assets/images/plots/covid19_titol.png
 nav-menu: true
 tile_color: covid19
 ---

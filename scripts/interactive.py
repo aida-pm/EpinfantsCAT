@@ -259,7 +259,7 @@ def build_incidence_by_age(df, category, disease_col, value_col, output_path):
                 method="update",
                 args=[
                     {"visible": [dd == disease for dd in trace_disease]},
-                    {"title.text": f"Altres — incidència sindròmica — {disease}"},
+                    {"title.text": f"Altres malalties — {disease}"},
                 ],
             )
             for disease in diseases
@@ -270,7 +270,7 @@ def build_incidence_by_age(df, category, disease_col, value_col, output_path):
                 active=0, buttons=buttons, x=1, xanchor="right", y=1.15,
             )])
 
-        title = f"Altres — incidència sindròmica — {diseases[0]}" if diseases else "Altres"
+        title = f"Altres malalties — {diseases[0]}" if diseases else "Altres"
 
     else:
         for i, age in enumerate(ages):
@@ -280,7 +280,7 @@ def build_incidence_by_age(df, category, disease_col, value_col, output_path):
                 line=dict(color=PALETTE[i % len(PALETTE)]),
             ))
 
-        title = f"Incidència sindròmica — {category}"
+        title = f"Incidència de malaltia — {category}"
 
     fig.update_layout(
         title=title,
@@ -349,7 +349,7 @@ def build_multitest_by_age(df, category, output_path):
                 method="update",
                 args=[
                     {"visible": [dd == disease for dd in trace_disease]},
-                    {"title.text": f"Altres — multitests — {disease}"},
+                    {"title.text": f"Multitests — {disease}"},
                 ],
             )
             for disease in diseases
@@ -359,7 +359,7 @@ def build_multitest_by_age(df, category, output_path):
         )])
 
     title = (
-        f"Altres — multitests — {diseases[0]}"
+        f"Multitests — {diseases[0]}"
         if category == "altres" and diseases else f"Multitests — {category}"
     )
 
@@ -439,7 +439,7 @@ def build_seasonal_incidence(df, category, disease_col, output_path):
         fig.update_layout(updatemenus=[dict(active=0, buttons=buttons, x=1, xanchor="right", y=1.12)])
 
     fig.update_layout(
-        title=f"Comparació de temporades — {category}",
+        title=f"{category}",
         template="plotly_white",
         height=320 * nrows,
         legend_title_text="Temporada",
@@ -532,10 +532,10 @@ def build_seasonal_multitest(df, category, output_path):
         fig.update_layout(updatemenus=[dict(active=0, buttons=buttons, x=1, xanchor="right", y=1.12)])
 
     fig.update_layout(
-        title=f"Comparació de temporades — multitests — {category}",
+        title=f"Multitests — {category}",
         template="plotly_white",
         height=340 * nrows,
-        legend_title_text="Temporada (línia continua: incidència; punteada: positivitat)",
+        legend_title_text="Temporada (línia: incidència; punts: positivitat)",
         margin=dict(t=100),
     )
 

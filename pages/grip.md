@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Grip
-image: /assets/images/plots/grip-titol.png
+image: /assets/images/plots/grip_titol.png
 nav-menu: true
 tile_color: grip
 ---

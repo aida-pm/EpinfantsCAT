@@ -1,7 +1,7 @@
 ---
 layout: page
 title: VRS
-image: /assets/images/plots/vrs-titol.png
+image: /assets/images/plots/vrs_titol.png
 nav-menu: true
 tile_color: vrs
 ---

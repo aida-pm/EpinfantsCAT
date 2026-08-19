@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Altres
-image: /assets/images/plots/altres-titol.png
+image: /assets/images/plots/altres_titol.png
 nav-menu: true
 tile_color: altres
 ---
