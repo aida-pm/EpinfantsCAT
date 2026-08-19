@@ -39,7 +39,7 @@ tile_color: grip
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/grip-inc-ages.html' | relative_url }}"
-                title="Grip — incidència sindròmica per grup d'edat"
+                title="Incidència de grip per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -65,11 +65,11 @@ tile_color: grip
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/grip-ontop.html' | relative_url }}"
-                title="Grip — incidència sindròmica per temporada"
+                title="Incidència de grip per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 
@@ -86,13 +86,13 @@ tile_color: grip
             Incidència de proves positives de grip i percentatge de
             positivitat, per grup d'edat i total. Les dades dels
             multitests són setmanals i es representen sense
-            suavització.
+            suavitzar.
         </p>
 
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/grip-mt-ages.html' | relative_url }}"
-                title="Grip — multitests per grup d'edat"
+                title="Multitests positius per influenza per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -119,11 +119,11 @@ tile_color: grip
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/grip-mt-ontop.html' | relative_url }}"
-                title="Grip — multitests per temporada"
+                title="Multitests positius per influenza per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 

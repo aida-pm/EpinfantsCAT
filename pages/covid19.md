@@ -39,7 +39,7 @@ tile_color: covid19
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/covid19-inc-ages.html' | relative_url }}"
-                title="COVID-19 — incidència sindròmica per grup d'edat"
+                title="Incidència de COVID-19 per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -65,11 +65,11 @@ tile_color: covid19
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/covid19-ontop.html' | relative_url }}"
-                title="COVID-19 — incidència sindròmica per temporada"
+                title="Incidència de COVID-19 per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 
@@ -86,13 +86,13 @@ tile_color: covid19
             Incidència de proves positives de SARS-CoV-2 i percentatge
             de positivitat, per grup d'edat i total. Les dades dels
             multitests són setmanals i es representen sense
-            suavització.
+            suavitzar.
         </p>
 
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/covid19-mt-ages.html' | relative_url }}"
-                title="COVID-19 — multitests per grup d'edat"
+                title="Multitests positius per SARS-CoV-2 per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -119,11 +119,11 @@ tile_color: covid19
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/covid19-mt-ontop.html' | relative_url }}"
-                title="COVID-19 — multitests per temporada"
+                title="Multitests positius per SARS-CoV-2 per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 

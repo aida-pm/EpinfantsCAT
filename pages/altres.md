@@ -38,7 +38,7 @@ tile_color: altres
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/altres-inc-ages.html' | relative_url }}"
-                title="Altres — incidència sindròmica per grup d'edat"
+                title="Altres — incidència de malaltia per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -65,11 +65,11 @@ tile_color: altres
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/altres-ontop.html' | relative_url }}"
-                title="Altres — incidència sindròmica per temporada"
+                title="Altres — incidència de malaltia per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 
@@ -86,7 +86,7 @@ tile_color: altres
             Incidència de proves positives i percentatge de positivitat
             per als virus seleccionats, per grup d'edat i total.
             Les dades dels multitests són setmanals i es representen
-            sense suavització. Selecciona el virus que vols consultar
+            sense suavitzar. Selecciona el virus que vols consultar
             mitjançant el menú.
         </p>
 
@@ -124,7 +124,7 @@ tile_color: altres
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 

@@ -30,7 +30,7 @@ tile_color: vrs
         </header>
 
         <p>
-            Incidència de les síndromes relacionades amb VRS per grup
+            Incidència de bronquiolitis per grup
             d'edat i total. Les dades sindròmiques són diàries i es
             representen amb una mitjana mòbil de 7 dies.
         </p>
@@ -38,7 +38,7 @@ tile_color: vrs
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/vrs-inc-ages.html' | relative_url }}"
-                title="VRS — incidència sindròmica per grup d'edat"
+                title="Incidència de bronquiolitis per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -59,11 +59,11 @@ tile_color: vrs
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/vrs-ontop.html' | relative_url }}"
-                title="VRS — incidència sindròmica per temporada"
+                title="Incidència de bronquiolitis per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 
@@ -79,13 +79,13 @@ tile_color: vrs
         <p>
             Incidència de proves positives per VRS i percentatge de
             positivitat, per grup d'edat i total. Les dades dels
-            multitests són setmanals i es representen sense suavització.
+            multitests són setmanals i es representen sense suavitzar.
         </p>
 
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/vrs-mt-ages.html' | relative_url }}"
-                title="VRS — multitests per grup d'edat"
+                title="Multitests positius per VRS per grup d'edat"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
@@ -107,11 +107,11 @@ tile_color: vrs
         <div class="iframe-container">
             <iframe
                 src="{{ '/assets/interactive/vrs-mt-ontop.html' | relative_url }}"
-                title="VRS — multitests per temporada"
+                title="Multitests positius per VRS per temporada"
                 loading="lazy"
                 frameborder="0"
                 allowfullscreen
-                style="width: 100%; height: 450px;">
+                style="width: 100%; height: 1000px;">
             </iframe>
         </div>
 
