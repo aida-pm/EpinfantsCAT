@@ -5,12 +5,13 @@
 {% endif %}
 <section id="one" class="tiles">
   {% for tile in tiles limit:site.tiles-count %}
-  <article>
+  <article{% if tile.tile_color %} class="tile-{{ tile.tile_color }}"{% endif %}>
     <span class="image">
       <img src="{{ tile.image }}" alt="{{ tile.title }}" />
     </span>
+    <a href="{{ tile.url | relative_url }}" class="link primary" aria-label="{{ tile.title }}"></a>
     <header class="major">
-      <h3><a href="{{ tile.url  | relative_url }}" class="link">{{ tile.title }}</a></h3>
+      <h3>{{ tile.title }}</h3>
       <p>{{ tile.description }}</p>
     </header>
   </article>

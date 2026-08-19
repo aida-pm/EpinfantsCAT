@@ -21,7 +21,7 @@
             <div class="content">
                 <p style="text-transform: uppercase;">{{ site.description }}</p>
                 <ul class="actions">
-                    <li><a href="#one" class="button next scrolly">Get Started</a></li>
+                    <li><a href="{{ "docs.html" | relative_url }}" class="button next">Com ho fem?</a></li>
                 </ul>
             </div>
         </div>
@@ -30,23 +30,20 @@
     <!-- Main -->
     <div id="main">
 
-        <!-- One -->
+        <!-- Tiles: Grip / VRS / COVID-19 / Altres, each linking straight to its page -->
         {% include tiles.html %}
 
-        <!-- Two -->
+        <!-- Fes un cop d'ull! (from index.md) -->
         <section id="two">
             <div class="inner">
-                <header class="major">
-                    <h2>Massa libero</h2>
-                </header>
-                <p>{{ content }}</p>
-                <ul class="actions">
-                    <li><a href="landing.html" class="button next">Get Started</a></li>
-                </ul>
+                {{ content }}
             </div>
         </section>
 
     </div>
+
+    <!-- Contact form + collaborators: homepage only -->
+    {% include contact.html %}
 
     {% include footer.html %}
 

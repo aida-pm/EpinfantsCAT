@@ -15,6 +15,16 @@ socials:
   GitHub: https://github.com/aida-pm
   LinkedIn: https://www.linkedin.com/in/aidaperramon/
 
+# collaborators shown on the homepage contact section (logo + link)
+# place the logo files under assets/images/logos/
+collaborators:
+  CoPedicAT:
+    url: https://copedicat.cat
+    logo: assets/images/logos/copedicat.png
+  BIOCOMSC:
+    url: https://biocomsc.upc.edu
+    logo: assets/images/logos/biocomsc.png
+
 # build settings
 markdown: kramdown
 

@@ -1,0 +1,39 @@
+<!-- Contact -->
+<section id="contact">
+	<div class="inner">
+		<section>
+			<form action="https://formspree.io/{{ site.email }}" method="POST">
+				<div class="field half first">
+					<label for="name">Nom</label>
+					<input type="text" name="name" id="name" />
+				</div>
+				<div class="field half">
+					<label for="email">Email</label>
+					<input type="text" name="_replyto" id="email" />
+				</div>
+				<div class="field">
+					<label for="message">Missatge</label>
+					<textarea name="message" id="message" rows="6"></textarea>
+				</div>
+				<ul class="actions">
+					<li><input type="submit" value="Envia" class="special" /></li>
+					<li><input type="reset" value="Neteja" /></li>
+				</ul>
+			</form>
+		</section>
+		<section>
+			<header class="major">
+				<h3>Col·laboradors</h3>
+			</header>
+			<div class="collaborators">
+				{% for collaborator in site.collaborators %}
+					{% assign name = collaborator[0] %}
+					{% assign info = collaborator[1] %}
+					<a href="{{ info.url }}" class="collaborator-logo" target="_blank" rel="noopener noreferrer" aria-label="{{ name }}">
+						<img src="{{ info.logo | relative_url }}" alt="{{ name }}" />
+					</a>
+				{% endfor %}
+			</div>
+		</section>
+	</div>
+</section>

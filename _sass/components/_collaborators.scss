@@ -1,0 +1,40 @@
+///
+/// EpinfantsCAT — Collaborators logo strip
+///
+
+	.collaborators {
+		@include vendor('display', 'flex');
+		@include vendor('flex-wrap', 'wrap');
+		@include vendor('align-items', 'center');
+		gap: 2em;
+		margin-top: 1em;
+
+		.collaborator-logo {
+			border-bottom: 0;
+			display: inline-block;
+			opacity: 0.85;
+
+			@include vendor('transition', 'opacity #{_duration(transition)} ease-in-out');
+
+			&:hover {
+				opacity: 1;
+			}
+
+			img {
+				display: block;
+				height: 3.5em;
+				width: auto;
+				max-width: 12em;
+			}
+		}
+	}
+
+	@include breakpoint(small) {
+		.collaborators {
+			gap: 1.5em;
+
+			.collaborator-logo img {
+				height: 2.75em;
+			}
+		}
+	}

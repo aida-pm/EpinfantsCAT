@@ -28,6 +28,7 @@
 			background-position: center;
 			background-repeat: no-repeat;
 			background-size: cover;
+			color: #ffffff;
 			cursor: default;
 			height: 40vh;
 			max-height: 40em;
@@ -140,6 +141,35 @@
 			&:nth-child(6n) {
 				&:before {
 					background-color: _palette(accent6);
+				}
+			}
+
+			// Explicit per-page colours (added for EpinfantsCAT), set via
+			// the `tile_color` front matter field on grip.md / vrs.md /
+			// covid19.md / altres.md and applied by _includes/tiles.html.
+			// Declared after the :nth-child rules above so they always
+			// win, regardless of the pages' order on site.html_pages.
+			&.tile-vrs {
+				&:before {
+					background-color: _palette(accent1); // turquesa
+				}
+			}
+
+			&.tile-altres {
+				&:before {
+					background-color: _palette(accent2); // lila
+				}
+			}
+
+			&.tile-grip {
+				&:before {
+					background-color: _palette(accent3); // verd
+				}
+			}
+
+			&.tile-covid19 {
+				&:before {
+					background-color: _palette(accent4); // taronja
 				}
 			}
 		}

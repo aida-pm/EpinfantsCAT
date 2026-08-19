@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+	Forty by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+
+{% include head.html %}
+
+<body>
+
+    {% include header.html %}
+
+    <!-- Banner -->
+    <section id="banner" class="major">
+        <div class="inner">
+            <header class="major">
+                <h1>{{ page.landing-title }}</h1>
+            </header>
+            <div class="content">
+                <p style="text-transform: uppercase;">{{ site.description }}</p>
+                <ul class="actions">
+                    <li><a href="{{ "docs.html" | relative_url }}" class="button next">Com ho fem?</a></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main -->
+    <div id="main">
+
+        <!-- Tiles: Grip / VRS / COVID-19 / Altres, each linking straight to its page -->
+        {% include tiles.html %}
+
+        <!-- Fes un cop d'ull! (from index.md) -->
+        <section id="two">
+            <div class="inner">
+                {{ content }}
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Contact form + collaborators: homepage only -->
+    {% include contact.html %}
+
+    {% include footer.html %}
+
+</body>
+
+</html>
